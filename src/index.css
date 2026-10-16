@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/*
+ * Type system: Space Grotesk carries the display voice, JetBrains Mono the
+ * HUD / terminal voice. Both load from Google Fonts (see index.html).
+ */
+@theme {
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-anton: "Anton", "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    background-color: #000;
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: rgb(252 211 77 / 0.9);
+    color: #000;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+/* Hide the rail's scrollbar; the amber progress line is the readout. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 35mm film grain, tiled over sections at very low opacity. */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* Hover scan sweep inside project cards. */
+@keyframes scan-y {
+  from {
+    top: -2%;
+  }
+  to {
+    top: 102%;
+  }
+}
+
+/* Terminal caret. */
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Seamless marquee loop (content is duplicated, translate one half). */
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Equalizer bars in the tech console readout. */
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Slow schematic ring behind the tech console. */
+@keyframes rotate-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,2 @@
+# Runtime requirements for the interactive smokes (informational)
+playwright==1.49.0
