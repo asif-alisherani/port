@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useImages } from '../hooks/useImages.js';
 import CustomCursor from './CustomCursor.jsx';
@@ -6,14 +6,43 @@ import FilmOverlays from './FilmOverlays.jsx';
 import Loader from './Loader.jsx';
 import ParticleField from './ParticleField.jsx';
 
-// Artwork lives on the author's public Google Drive (original PNG bytes).
-const decayedUrl = 'https://lh3.googleusercontent.com/d/1tAFqIVyXiwhj22-gv5tQtGbGkVDPvHei';
-const pristineUrl = 'https://lh3.googleusercontent.com/d/1DwkmgmEcGuYO2DN4ZQWaYPpFtwN61HP7';
+// Artwork is self-hosted (lossless WebP, pixel-identical to the original PNGs),
+// so the hero never depends on Google Drive rate limits.
+const decayedUrl = '/hero/cyborg-decayed.webp';
+const pristineUrl = '/hero/cyborg-pristine.webp';
 
 // Module-level so the array identity is stable between renders.
 const SOURCES = [decayedUrl, pristineUrl];
 
 const EASE = [0.22, 1, 0.36, 1];
+
+/**
+ * Touch devices: freeze the hero height in px. Mobile browsers resize the
+ * viewport as the address bar slides in and out while scrolling, which would
+ * re-fit (and visibly grow) the figure. Only a width change (rotation) re-measures.
+ * Desktop keeps the plain CSS height (h-svh).
+ */
+function useStableHeroHeight() {
+  const [height, setHeight] = useState(null);
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: coarse)').matches) return undefined;
+    let lastWidth = window.innerWidth;
+    const measure = () => setHeight(Math.max(512, window.innerHeight));
+    measure();
+    const onResize = () => {
+      if (window.innerWidth === lastWidth) return; // address bar only: ignore
+      lastWidth = window.innerWidth;
+      measure();
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, []);
+  return height;
+}
 
 /** Name flanking the figure: clipped per-letter rise, Anton condensed caps. */
 function FlankWord({ text, sub, delay = 0, align = 'left', className = '' }) {
@@ -96,12 +125,14 @@ export default function CyborgHero({ fit = 'focus', config, className = '', chil
   const sectionRef = useRef(null);
   const { status, images } = useImages(SOURCES);
   const ready = status === 'ready';
+  const stableHeight = useStableHeroHeight();
 
   return (
     <section
       ref={sectionRef}
       data-status={status}
       aria-label="Cyborg transformation"
+      style={stableHeight ? { height: stableHeight } : undefined}
       className={`relative h-svh min-h-[32rem] w-full touch-pan-y overflow-hidden bg-black pointer-fine:cursor-none ${className}`}
     >
       {ready && (

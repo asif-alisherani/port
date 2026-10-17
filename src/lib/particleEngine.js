@@ -63,6 +63,8 @@ export const DEFAULT_CONFIG = Object.freeze({
  *   focus    the figure fills the screen, so it stays big on tall/narrow
  *            viewports. Identical to `contain` on 16:9 and wider screens.
  */
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
 export const FIT_MODES = Object.freeze({
   contain: { focus: 1, align: 'center' },
   // ~49% of the image width; scaled so the head clears the navbar by a hair.
@@ -70,11 +72,48 @@ export const FIT_MODES = Object.freeze({
 });
 
 /**
+ * Phone framing (portrait boxes narrower than PORTRAIT_MAX_ASPECT).
+ * The head (anchorX/anchorY, as fractions of the artwork) is pinned to the
+ * centre of the box, which is where the faded middle of the ghost "SHERANI"
+ * sits. The figure is scaled so the jacket always reaches the bottom edge.
+ */
+export const PORTRAIT_FIT = Object.freeze({
+  focus: 0.56, // same width framing as desktop; grows only if needed to reach the bottom edge
+  anchorX: 0.456, // head centre in the 1600x900 artwork (x = 730)
+  anchorY: 0.215, // head centre / eye line (y = 194)
+  targetX: 0.5,
+  targetY: 0.5,
+});
+export const PORTRAIT_MAX_ASPECT = 0.72;
+
+/**
  * Where to draw an image of size (imgW x imgH) inside a (boxW x boxH) box.
  * `focus` is the central fraction of the image width that must stay visible,
  * `scale` shrinks the whole framing (re-anchored by `align` afterwards).
+ * With `anchorY` set, the image point (anchorX, anchorY) lands on the box
+ * point (targetX, targetY) instead, and the scale grows until the image
+ * bottom reaches the box bottom.
  */
-export function getFitRect(imgW, imgH, boxW, boxH, { focus = 1, align = 'center', scale = 1 } = {}) {
+export function getFitRect(
+  imgW,
+  imgH,
+  boxW,
+  boxH,
+  { focus = 1, align = 'center', scale = 1, anchorX, anchorY, targetX = 0.5, targetY = 0.5 } = {},
+) {
+  if (anchorY != null) {
+    const s = Math.max(boxW / (imgW * focus), (boxH * (1 - targetY)) / (imgH * (1 - anchorY)));
+    const w = imgW * s;
+    const h = imgH * s;
+    const ax = anchorX ?? 0.5;
+    return {
+      // keep the head centred, but never pull an image edge inside the box
+      x: clamp(boxW * targetX - ax * w, boxW - w, 0),
+      y: boxH * targetY - anchorY * h,
+      w,
+      h,
+    };
+  }
   const s = Math.min(boxH / imgH, boxW / (imgW * focus)) * scale;
   const w = imgW * s;
   const h = imgH * s;
@@ -85,8 +124,6 @@ export function getFitRect(imgW, imgH, boxW, boxH, { focus = 1, align = 'center'
     h,
   };
 }
-
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 export class ParticleLens {
   /**
@@ -106,6 +143,7 @@ export class ParticleLens {
     this.decayed = decayed;
     this.pristine = pristine;
     this.fit = FIT_MODES[fit] ?? FIT_MODES.focus;
+    this.fitName = FIT_MODES[fit] ? fit : 'focus';
     this.cfg = { ...DEFAULT_CONFIG, ...config };
 
     this.width = 0;
@@ -154,7 +192,8 @@ export class ParticleLens {
       this.pristine.naturalHeight,
       width,
       height,
-      this.fit,
+      // Phones: pin the head to the faded middle of the ghost surname.
+      this.fitName === 'focus' && width / height < PORTRAIT_MAX_ASPECT ? PORTRAIT_FIT : this.fit,
     );
 
     this.#paintBase(this.rect);

@@ -5,7 +5,7 @@ import { CONTACT_FORM_EVENT } from '../lib/contactForm.js';
 import { CornerTicks } from './SectionChrome.jsx';
 
 const EASE = [0.22, 1, 0.36, 1];
-const ADDRESS = 'sheranil.asifa@gmail.com';
+const ADDRESS = 'sherani.asifali@gmail.com';
 
 const FIELDS = [
   {

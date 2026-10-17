@@ -15,6 +15,8 @@
   body {
     background-color: #000;
     color-scheme: dark;
+    /* No rubber-band / Android stretch at the top: it visibly enlarged the hero on phones. */
+    overscroll-behavior-y: none;
   }
 
   body {
