@@ -14,6 +14,76 @@ function Arrow({ className = 'h-3.5 w-3.5' }) {
   );
 }
 
+/** True once the image/video has loaded and turns out taller than it is wide. */
+function isPortrait(w, h) {
+  return w > 0 && h > w * 1.05;
+}
+
+/**
+ * Cover banner. Landscape covers fill the banner as before; portrait covers
+ * (phone screenshots, posters) are shown whole over a blurred copy of themselves.
+ */
+function CoverBanner({ src, alt }) {
+  const [portrait, setPortrait] = useState(false);
+  return (
+    <div className="relative h-[46vh] min-h-72 w-full overflow-hidden md:h-[58vh]">
+      {portrait && (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl brightness-[0.35]"
+        />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={(e) => setPortrait(isPortrait(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight))}
+        className={`relative h-full w-full ${portrait ? 'object-contain brightness-[0.75] [mask-image:linear-gradient(to_right,transparent,black_18%,black_82%,transparent)]' : 'object-cover brightness-[0.55]'}`}
+      />
+      <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent" />
+    </div>
+  );
+}
+
+/**
+ * Gallery tile at the image's own aspect ratio (no cropping). Landscape shots
+ * span two grid columns, portrait shots one.
+ */
+function GalleryItem({ src, caption, index, onOpen }) {
+  const [wide, setWide] = useState(false);
+  return (
+    <motion.figure
+      initial={{ opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.6, delay: (index % 4) * 0.08, ease: EASE }}
+      className={wide ? 'col-span-2' : ''}
+    >
+      <button
+        type="button"
+        onClick={() => onOpen(src)}
+        className="group relative block w-full overflow-hidden border border-white/10 bg-neutral-950 transition-colors duration-500 hover:border-amber-400/40"
+      >
+        <img
+          src={src}
+          alt={caption || ''}
+          loading="lazy"
+          onLoad={(e) => setWide(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight * 1.15)}
+          className="block h-auto w-full brightness-90 transition-[filter] duration-700 ease-out group-hover:brightness-110"
+        />
+        <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        <span className="absolute right-3 bottom-3 border border-amber-400/40 bg-black/80 px-2 py-1 font-mono text-[9px] tracking-[0.25em] text-amber-300 uppercase opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
+          Expand
+        </span>
+      </button>
+      {caption && (
+        <figcaption className="mt-3 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">{caption}</figcaption>
+      )}
+    </motion.figure>
+  );
+}
+
 /**
  * Shared full-page case study for projects and side quests. Takes over the
  * viewport above everything else: hero, meta strip, process film, the work,
@@ -24,6 +94,7 @@ export default function DetailPage({ entry, siblings, kind, backLabel, nextLabel
   const scrollRef = useRef(null);
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
+  const [videoRatio, setVideoRatio] = useState(null); // width / height, from metadata
   const [lightbox, setLightbox] = useState(null);
 
   const { scrollYProgress } = useScroll({ container: scrollRef });
@@ -121,10 +192,7 @@ export default function DetailPage({ entry, siblings, kind, backLabel, nextLabel
         {/* Hero */}
         <header className="relative border-b border-white/5">
           <div aria-hidden="true" className="grain pointer-events-none absolute inset-0 z-10 opacity-[0.05] mix-blend-overlay" />
-          <div className="relative h-[46vh] min-h-72 w-full overflow-hidden md:h-[58vh]">
-            <img src={entry.cover} alt={entry.title} className="h-full w-full object-cover brightness-[0.55]" />
-            <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent" />
-          </div>
+          <CoverBanner src={entry.cover} alt={entry.title} />
 
           <div className="relative mx-auto -mt-28 w-full max-w-6xl px-5 pb-14 md:-mt-36 md:px-8">
             <motion.p
@@ -180,7 +248,16 @@ export default function DetailPage({ entry, siblings, kind, backLabel, nextLabel
           {entry.video && (
             <section aria-label="Process film" className="relative">
               <p className="font-mono text-[10px] tracking-[0.4em] text-amber-400/90 uppercase">Process film</p>
-              <div className="relative mt-5 overflow-hidden border border-white/15 bg-neutral-950">
+              <div className="relative mt-5 flex justify-center overflow-hidden border border-white/15 bg-neutral-950">
+                {/* Ambient backdrop so portrait (9:16) films don't float in a void */}
+                {entry.cover && (
+                  <img
+                    src={entry.cover}
+                    alt=""
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+                  />
+                )}
                 <CornerTicks />
                 <video
                   ref={videoRef}
@@ -189,11 +266,21 @@ export default function DetailPage({ entry, siblings, kind, backLabel, nextLabel
                   playsInline
                   loop
                   muted
-                  preload="none"
+                  preload="metadata"
                   onClick={togglePlay}
                   onPlay={() => setPlaying(true)}
                   onPause={() => setPlaying(false)}
-                  className="aspect-video w-full cursor-pointer object-cover"
+                  onLoadedMetadata={(e) => {
+                    const { videoWidth: w, videoHeight: h } = e.currentTarget;
+                    if (w && h) setVideoRatio(w / h);
+                  }}
+                  // Original aspect ratio: full width for landscape, height capped at 78svh for portrait.
+                  style={
+                    videoRatio
+                      ? { aspectRatio: String(videoRatio), width: `min(100%, calc(78svh * ${videoRatio}))`, height: 'auto' }
+                      : undefined
+                  }
+                  className="relative block h-auto max-h-[78svh] w-auto max-w-full cursor-pointer object-contain"
                 />
                 {!playing && (
                   <button
@@ -293,38 +380,9 @@ export default function DetailPage({ entry, siblings, kind, backLabel, nextLabel
           {/* Gallery */}
           <section aria-label="Gallery" className="mt-24">
             <p className="font-mono text-[10px] tracking-[0.4em] text-amber-400/90 uppercase">Gallery</p>
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid grid-cols-2 items-start gap-4 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {entry.gallery.map(({ src, caption }, i) => (
-                <motion.figure
-                  key={caption}
-                  initial={{ opacity: 0, y: 22 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.6, delay: i * 0.08, ease: EASE }}
-                  className={i === 0 ? 'sm:col-span-2 lg:col-span-2' : ''}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setLightbox(src)}
-                    className="group relative block w-full overflow-hidden border border-white/10 bg-neutral-950 transition-colors duration-500 hover:border-amber-400/40"
-                  >
-                    <img
-                      src={src}
-                      alt={caption}
-                      loading="lazy"
-                      className={`w-full object-cover brightness-90 transition-all duration-700 ease-out group-hover:scale-[1.04] group-hover:brightness-110 ${
-                        i === 0 ? 'aspect-[16/10]' : 'aspect-[4/5]'
-                      }`}
-                    />
-                    <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                    <span className="absolute right-3 bottom-3 border border-amber-400/40 bg-black/80 px-2 py-1 font-mono text-[9px] tracking-[0.25em] text-amber-300 uppercase opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
-                      Expand
-                    </span>
-                  </button>
-                  <figcaption className="mt-3 font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase">
-                    {caption}
-                  </figcaption>
-                </motion.figure>
+                <GalleryItem key={`${src}-${i}`} src={src} caption={caption} index={i} onOpen={setLightbox} />
               ))}
             </div>
           </section>
@@ -361,7 +419,7 @@ export default function DetailPage({ entry, siblings, kind, backLabel, nextLabel
           onClick={() => setLightbox(null)}
           className="fixed inset-0 z-50 grid cursor-zoom-out place-items-center bg-black/92 p-6 backdrop-blur-sm"
         >
-          <img src={lightbox} alt="" className="max-h-full max-w-5xl object-contain" />
+          <img src={lightbox} alt="" className="max-h-[90svh] max-w-full object-contain md:max-w-5xl" />
           <span className="absolute top-5 right-5 font-mono text-[10px] tracking-[0.25em] text-neutral-500 uppercase">
             Esc / click to close
           </span>
