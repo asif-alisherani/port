@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasMedia;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Quest extends Model
 {
+    use HasMedia;
+
     protected $guarded = [];
 
     protected $casts = [
@@ -41,12 +44,12 @@ class Quest extends Model
             'client' => $this->client,
             'duration' => $this->duration,
             'summary' => $this->summary,
-            'cover' => $this->cover,
-            'video' => $this->video,
+            'cover' => $this->coverUrl(),
+            'video' => $this->videoUrl(),
             'description' => $this->description ?? [],
             'stack' => $this->stack ?? [],
             'highlights' => $this->highlights ?? [],
-            'gallery' => $this->gallery ?? [],
+            'gallery' => $this->galleryUrls(),
             'links' => $this->links ?? [],
         ];
     }

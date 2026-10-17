@@ -4,6 +4,7 @@
 @section('content')
 <form method="POST"
       action="{{ $mode === 'create' ? route($route . '.store') : route($route . '.update', $item) }}"
+      enctype="multipart/form-data"
       class="max-w-4xl">
     @csrf
     @if ($mode === 'edit') @method('PUT') @endif
@@ -22,10 +23,7 @@
     <x-field name="summary" label="Summary" type="textarea" :rows="2" :value="$item->summary"
              hint="one or two lines, shown under the title" />
 
-    <div class="grid gap-x-8 md:grid-cols-2">
-        <x-field name="cover" label="Cover image URL" :value="$item->cover" required />
-        <x-field name="video" label="Process video URL" :value="$item->video" hint="mp4" />
-    </div>
+    <x-media-fields :item="$item" />
 
     <x-field name="description" label="Description" type="textarea" :rows="8" :value="$item->description"
              hint="one paragraph per line" />
@@ -35,9 +33,6 @@
 
     <x-field name="highlights" label="Highlights (JSON)" type="textarea" :rows="6" :value="$item->highlights"
              hint='[["Pages","36"],["Panels","210+"]]' />
-
-    <x-field name="gallery" label="Gallery (JSON)" type="textarea" :rows="7" :value="$item->gallery"
-             hint='[{"src":"https://…","caption":"…"}]' />
 
     <x-field name="links" label="Links (JSON)" type="textarea" :rows="5" :value="$item->links"
              hint='[{"label":"Read preview","href":"https://…"}]' />

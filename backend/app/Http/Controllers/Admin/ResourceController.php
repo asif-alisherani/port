@@ -51,8 +51,10 @@ abstract class ResourceController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->prepare($request, $request->validate($this->rules()));
-        $this->model::create($data);
+        $data = $this->prepare($request, $request->validate($this->rules(), $this->messages()));
+        $data = $this->beforeSave($request, $data);
+        $item = $this->model::create($data);
+        $this->afterSave($item);
         $this->flushCache();
 
         return redirect()->route("{$this->route}.index")
@@ -72,8 +74,10 @@ abstract class ResourceController extends Controller
     public function update(Request $request, string $id)
     {
         $item = $this->model::findOrFail($id);
-        $data = $this->prepare($request, $request->validate($this->rules($item)));
+        $data = $this->prepare($request, $request->validate($this->rules($item), $this->messages()));
+        $data = $this->beforeSave($request, $data, $item);
         $item->update($data);
+        $this->afterSave($item);
         $this->flushCache();
 
         return redirect()->route("{$this->route}.index")
@@ -82,7 +86,9 @@ abstract class ResourceController extends Controller
 
     public function destroy(string $id)
     {
-        $this->model::findOrFail($id)->delete();
+        $item = $this->model::findOrFail($id);
+        $item->delete();
+        $this->afterDelete($item);
         $this->flushCache();
 
         return redirect()->route("{$this->route}.index")
@@ -110,6 +116,28 @@ abstract class ResourceController extends Controller
         }
 
         return $data;
+    }
+
+    /** Custom validation messages. */
+    protected function messages(): array
+    {
+        return [];
+    }
+
+    /** Hook: adjust data (e.g. store uploads) right before create/update. */
+    protected function beforeSave(Request $request, array $data, ?Model $item = null): array
+    {
+        return $data;
+    }
+
+    /** Hook: runs after a successful create/update. */
+    protected function afterSave(Model $item): void
+    {
+    }
+
+    /** Hook: runs after a record is deleted. */
+    protected function afterDelete(Model $item): void
+    {
     }
 
     protected function flushCache(): void

@@ -30,6 +30,9 @@ if (-not (Test-Path "database\database.sqlite")) {
     New-Item -ItemType File "database\database.sqlite" | Out-Null
 }
 
+Write-Host "Linking public storage (for uploads)..." -ForegroundColor Yellow
+if (-not (Test-Path "public\storage")) { php artisan storage:link }
+
 Write-Host "Migrating and seeding..." -ForegroundColor Yellow
 php artisan migrate --seed --force
 

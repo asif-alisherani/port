@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ManagesMedia;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 
 class ProjectController extends ResourceController
 {
+    use ManagesMedia;
+
     protected string $model = Project::class;
     protected string $view = 'projects';
     protected string $route = 'admin.projects';
     protected string $title = 'Project';
 
     protected array $lineFields = ['description', 'stack'];
-    protected array $jsonFields = ['highlights', 'gallery', 'links'];
+    protected array $jsonFields = ['highlights', 'links'];  // gallery is handled by ManagesMedia
 
     protected function rules(?Model $item = null): array
     {
@@ -27,14 +30,21 @@ class ProjectController extends ResourceController
             'client' => ['nullable', 'string', 'max:120'],
             'duration' => ['nullable', 'string', 'max:80'],
             'summary' => ['nullable', 'string', 'max:600'],
-            'cover' => ['required', 'url', 'max:500'],
-            'video' => ['nullable', 'url', 'max:500'],
             'description' => ['nullable', 'string'],
             'stack' => ['nullable', 'string'],
             'highlights' => ['nullable', 'json'],
-            'gallery' => ['nullable', 'json'],
             'links' => ['nullable', 'json'],
             'position' => ['nullable', 'integer', 'min:0'],
-        ];
+        ] + $this->mediaRules($item);
+    }
+
+    protected function messages(): array
+    {
+        return $this->mediaMessages();
+    }
+
+    protected function mediaFolder(): string
+    {
+        return 'projects';
     }
 }

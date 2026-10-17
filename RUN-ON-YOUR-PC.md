@@ -95,6 +95,21 @@ Then open:
 > `backend/.env` BEFORE the first seed (`php artisan migrate:fresh --seed`),
 > or just change the row in the `users` table afterwards.
 
+### Media uploads (covers, videos, galleries)
+
+Projects and side quests take **file uploads** for the cover image, process
+video and gallery. Files are saved to `backend/storage/app/public/uploads/`
+and served from `http://localhost:8000/storage/…`.
+
+- `setup.sh` / `setup.ps1` run `php artisan storage:link` for you. On an
+  existing install, run it once yourself: `cd backend && php artisan storage:link`.
+- Limits: images 10 MB (jpg, png, webp, gif, avif), videos 200 MB (mp4, webm).
+  Change with `UPLOAD_IMAGE_MAX_KB` / `UPLOAD_VIDEO_MAX_KB` in `backend/.env`.
+- `php artisan serve` raises PHP's upload limits automatically. If you serve
+  the backend another way (Herd site, Apache, nginx), raise `upload_max_filesize`
+  and `post_max_size` in php.ini (Herd: Settings → PHP → Max file upload size).
+- Re-running the seeder resets seeded projects to their original image URLs.
+
 ---
 
 ## 3 · Connect the two halves (the dynamic site)

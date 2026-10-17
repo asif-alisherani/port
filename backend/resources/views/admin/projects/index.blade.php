@@ -7,8 +7,8 @@
     <div class="border border-white/10">
         @forelse ($items as $item)
             <div class="flex items-center gap-4 border-b border-white/5 bg-neutral-950 px-4 py-3.5 last:border-0">
-                @if ($item->cover)
-                    <img src="{{ $item->cover }}" alt="" class="h-14 w-11 shrink-0 object-cover">
+                @if ($item->coverUrl())
+                    <img src="{{ $item->coverUrl() }}" alt="" class="h-14 w-11 shrink-0 object-cover">
                 @endif
                 <div class="min-w-0 flex-1">
                     <p class="truncate text-sm font-medium text-neutral-100">

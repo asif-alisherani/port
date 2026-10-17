@@ -11,7 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        \App\Console\Commands\ServeCommand::class,   // artisan serve with raised upload limits
+    ])
     ->withMiddleware(function (Middleware $middleware) {
+        // Hosts like Render terminate HTTPS at a proxy; trust it so URLs are https://
+        $middleware->trustProxies(at: '*');
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);

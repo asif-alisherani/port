@@ -24,6 +24,9 @@ if [ ! -f database/database.sqlite ]; then
   touch database/database.sqlite
 fi
 
+echo "→ Linking public storage (for uploads)…"
+php artisan storage:link 2>/dev/null || true
+
 echo "→ Migrating + seeding…"
 php artisan migrate --seed --force
 
