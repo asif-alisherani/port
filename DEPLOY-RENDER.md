@@ -246,3 +246,17 @@ Render Static Site…). Put that frontend URL into the backend's `FRONTEND_URL`.
 | Uploaded image URL 404 / Access Denied | Bucket not public (R2: enable R2.dev subdomain; Supabase: Public bucket) or wrong `AWS_URL` |
 | Upload fails with S3 error in logs | Check `AWS_ENDPOINT`, keys, bucket name; token must have **Read & Write** |
 | `exec docker/entrypoint.sh: no such file or directory` | Windows line endings — the Dockerfile strips them, but re-commit with `git add --renormalize .` if it persists |
+
+## Troubleshooting: "failed loading cafile stream: /etc/secrets/aiven-ca.pem"
+
+Render secret files are readable by **root only**, while Apache serves requests as `www-data`.
+Migrations (run as root) succeed, but every web request returns 500.
+
+`docker/entrypoint.sh` copies the CA to `storage/db-ca.pem` (mode 644) and points
+`MYSQL_ATTR_SSL_CA` at the copy before caching config. Keep the env var as
+`MYSQL_ATTR_SSL_CA=/etc/secrets/aiven-ca.pem`; the script handles the rest.
+
+If you deploy an older commit without that fix, set **Settings → Docker Command** to
+(no quotes — Render passes quote characters through literally):
+
+    sh -c install${IFS}-m${IFS}644${IFS}/etc/secrets/aiven-ca.pem${IFS}/var/www/html/storage/db-ca.pem&&export${IFS}MYSQL_ATTR_SSL_CA=/var/www/html/storage/db-ca.pem&&exec${IFS}/var/www/html/docker/entrypoint.sh
