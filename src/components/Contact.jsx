@@ -116,11 +116,11 @@ export default function Contact() {
               Transmission open
             </p>
             <a
-              href="mailto:sheranil.asifa@gmail.com"
+              href="mailto:sherani.asifali@gmail.com"
               className="group inline-flex items-center gap-4 font-display text-2xl font-semibold tracking-tight text-neutral-200 transition-colors duration-300 hover:text-amber-200 md:text-4xl"
             >
               <span className="relative">
-                sheranil.asifa@gmail.com
+                sherani.asifali@gmail.com
                 <span
                   aria-hidden="true"
                   className="absolute inset-x-0 -bottom-2 h-px origin-left scale-x-100 bg-neutral-700 transition-colors duration-300 group-hover:bg-amber-400"
