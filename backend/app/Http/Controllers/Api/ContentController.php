@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Experience;
 use App\Models\Project;
 use App\Models\Quest;
 use App\Models\Service;
@@ -26,6 +27,9 @@ class ContentController extends Controller
                 ->map->toApi()->all(),
 
             'quests' => Quest::published()->ordered()->get()
+                ->map->toApi()->all(),
+
+            'experience' => Experience::published()->ordered()->get()
                 ->map->toApi()->all(),
 
             'techDomains' => TechDomain::published()->ordered()->get()

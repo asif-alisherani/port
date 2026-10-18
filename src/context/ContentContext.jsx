@@ -2,12 +2,14 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { fetchContent, hasApi } from '../lib/api.js';
 import { PROJECTS } from '../data/projects.js';
 import { QUESTS } from '../data/sideQuests.js';
+import { EXPERIENCE } from '../data/experience.js';
 import { SERVICES, SOCIAL_LINKS, TECH_DOMAINS } from '../data/siteContent.js';
 
 const FALLBACK = {
   services: SERVICES,
   projects: PROJECTS,
   quests: QUESTS,
+  experience: EXPERIENCE,
   techDomains: TECH_DOMAINS,
   socialLinks: SOCIAL_LINKS,
 };
@@ -15,7 +17,7 @@ const FALLBACK = {
 /*
  * Loading strategy (when an API is configured):
  *   1. Show the last successful API response from localStorage instantly.
- *   2. Never show the bundled demo projects/quests: until real data exists,
+ *   2. Never show the bundled demo projects/quests/experience: until real data exists,
  *      projects/quests are [] and `status` is 'loading' (sections render placeholders).
  *   3. Fetch fresh content, retrying with backoff. The free Render backend
  *      sleeps when idle and can take ~50 s to wake up.
@@ -44,7 +46,7 @@ const writeCache = (data) => {
 /** Replace a section whenever the API returned an array, including empty. */
 const pick = (remote, fallback) => (Array.isArray(remote) ? remote : fallback);
 
-const ContentContext = createContext({ ...FALLBACK, status: 'static', source: 'static' });
+const ContentContext = createContext({ ...FALLBACK, experienceReady: true, status: 'static', source: 'static' });
 
 export function ContentProvider({ children }) {
   const [remote, setRemote] = useState(() => (hasApi ? readCache() : null));
@@ -83,7 +85,7 @@ export function ContentProvider({ children }) {
   }, []);
 
   const value = useMemo(() => {
-    if (!hasApi) return { ...FALLBACK, status: 'static', source: 'static' };
+    if (!hasApi) return { ...FALLBACK, experienceReady: true, status: 'static', source: 'static' };
     const r = remote ?? {};
     return {
       // Site copy (services, tech, socials) may fall back to the bundled text...
@@ -93,6 +95,9 @@ export function ContentProvider({ children }) {
       // ...but projects and quests never show demo entries.
       projects: pick(r.projects, []),
       quests: pick(r.quests, []),
+      experience: pick(r.experience, []),
+      // An older cached payload may predate the experience list: wait for live data.
+      experienceReady: Array.isArray(r.experience) || failed,
       // 'ready' once any real data exists (cached or live); 'error' if nothing ever arrived.
       status: remote ? 'ready' : failed ? 'error' : 'loading',
       source: fresh ? 'api' : remote ? 'cache' : 'none',

@@ -1,45 +1,29 @@
 import { useRef } from 'react';
 import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react';
+import { useContent } from '../context/ContentContext.jsx';
 import { SectionHead } from './SectionChrome.jsx';
 
 const EASE = [0.22, 1, 0.36, 1];
 
-// Placeholder history — swap in your own roles; the layout adapts.
-const EXPERIENCE = [
-  {
-    period: '2023 — PRESENT',
-    role: 'Senior Full-Stack Developer',
-    company: 'Northwind Labs',
-    summary:
-      'Own end-to-end delivery of the core web platform: React frontends, design-system work, and the APIs behind them. Lead a pod of four, ship weekly, keep the p95s honest.',
-    stack: ['React', 'TypeScript', 'Node', 'Tailwind'],
-    current: true,
-  },
-  {
-    period: '2021 — 2023',
-    role: 'Full-Stack Developer',
-    company: 'Hexabyte Studio',
-    summary:
-      'Built client products from Figma to production: Laravel services, REST APIs and React dashboards. Introduced CI and cut release time from days to hours.',
-    stack: ['Laravel', 'MySQL', 'React', 'CI/CD'],
-  },
-  {
-    period: '2019 — 2021',
-    role: 'React Native Developer',
-    company: 'Paperkite Apps',
-    summary:
-      'Shipped a cross-platform Android app used by 100k+ people. Owned offline sync, push flows, crash triage and store releases.',
-    stack: ['React Native', 'Android', 'REST'],
-  },
-  {
-    period: '2018 — 2019',
-    role: 'Junior Web Developer',
-    company: 'Bluebrick Media',
-    summary:
-      'Cut my teeth on marketing sites and CMS builds. Learned to love clean markup, fast pages and honest estimates.',
-    stack: ['HTML/CSS', 'JavaScript', 'WordPress'],
-  },
-];
+const NUMBER_WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+
+/** Telemetry derived from the entries themselves (no hard-coded numbers). */
+function telemetry(entries) {
+  const years = entries
+    .flatMap(({ period }) => (String(period).match(/\b(19|20)\d{2}\b/g) ?? []).map(Number));
+  const since = years.length ? Math.min(...years) : null;
+  const active = since ? Math.max(1, new Date().getFullYear() - since) : null;
+  const current = entries.some((e) => e.current);
+  return {
+    count: entries.length,
+    rows: [
+      ['TEAMS', String(entries.length).padStart(2, '0')],
+      ...(active ? [['YEARS ACTIVE', `${String(active).padStart(2, '0')}+`]] : []),
+      ['STATUS', current ? 'CURRENTLY SHIPPING' : 'OPEN TO NEW WORK'],
+    ],
+  };
+}
+
 
 /**
  * "Experience" — a sticky mission brief beside a flight-log timeline whose
@@ -49,6 +33,9 @@ export default function Experience() {
   const reduce = useReducedMotion();
   const rise = reduce ? 0 : 26;
   const logRef = useRef(null);
+  const { experience: EXPERIENCE, experienceReady } = useContent();
+  const stats = telemetry(EXPERIENCE);
+  const teamWord = NUMBER_WORDS[stats.count] ?? String(stats.count);
 
   const { scrollYProgress } = useScroll({
     target: logRef,
@@ -64,6 +51,9 @@ export default function Experience() {
     hidden: {},
     show: { transition: { staggerChildren: 0.14, delayChildren: 0.05 } },
   };
+
+  // Nothing published: hide the whole section (the navbar hides its link too).
+  if (experienceReady && EXPERIENCE.length === 0) return null;
 
   return (
     <section
@@ -92,7 +82,11 @@ export default function Experience() {
                   Where I&rsquo;ve worked<span className="text-amber-400">.</span>
                 </>
               }
-              blurb="Four teams, one habit: leave the codebase, the docs and the deploy pipeline better than I found them."
+              blurb={
+                stats.count
+                  ? `${teamWord} ${stats.count === 1 ? 'team' : 'teams'}, one habit: leave the codebase, the docs and the deploy pipeline better than I found them.`
+                  : 'One habit: leave the codebase, the docs and the deploy pipeline better than I found them.'
+              }
             />
 
             {/* Telemetry card, sticky under the brief */}
@@ -105,11 +99,7 @@ export default function Experience() {
             >
               <p className="font-mono text-[9px] tracking-[0.3em] text-neutral-600 uppercase">Flight telemetry</p>
               <div className="mt-4 space-y-3">
-                {[
-                  ['TEAMS', '04'],
-                  ['YEARS ACTIVE', '08+'],
-                  ['STATUS', 'CURRENTLY SHIPPING'],
-                ].map(([k, v]) => (
+                {stats.rows.map(([k, v]) => (
                   <div key={k} className="flex items-baseline justify-between gap-4 border-b border-white/5 pb-3 last:border-0 last:pb-0">
                     <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500">{k}</span>
                     <span className="font-mono text-[11px] tracking-[0.15em] text-amber-300/90">{v}</span>
@@ -121,6 +111,7 @@ export default function Experience() {
 
           {/* Flight log with a scroll-driven rail fill */}
           <motion.ol
+            key={EXPERIENCE.map((e) => `${e.id ?? e.company}:${e.role}`).join('|') || 'loading'}
             ref={logRef}
             variants={stagger}
             initial="hidden"
@@ -135,8 +126,21 @@ export default function Experience() {
               className="absolute top-0 -left-px h-full w-px origin-top bg-gradient-to-b from-amber-300 via-amber-400/80 to-amber-400/40 shadow-[0_0_10px_rgba(252,211,77,0.4)]"
             />
 
-            {EXPERIENCE.map(({ period, role, company, summary, stack, current }, i) => (
-              <motion.li key={company} variants={item} className="group relative">
+            {/* Placeholder rows while the API wakes up */}
+            {!experienceReady &&
+              [0, 1, 2].map((i) => (
+                <li key={`skeleton-${i}`} aria-hidden="true" className="relative">
+                  <span className="absolute top-3 -left-[36.5px] h-2 w-2 rounded-full border border-white/15 bg-black md:-left-[52.5px]" />
+                  <div className="h-3 w-28 animate-pulse bg-neutral-900" style={{ animationDelay: `${i * 150}ms` }} />
+                  <div className="mt-4 h-7 w-2/3 animate-pulse bg-neutral-900" style={{ animationDelay: `${i * 150}ms` }} />
+                  <div className="mt-3 h-3 w-40 animate-pulse bg-neutral-900/80" style={{ animationDelay: `${i * 150}ms` }} />
+                  <div className="mt-5 h-3 w-full max-w-xl animate-pulse bg-neutral-900/60" style={{ animationDelay: `${i * 150}ms` }} />
+                  <div className="mt-2 h-3 w-4/5 max-w-lg animate-pulse bg-neutral-900/60" style={{ animationDelay: `${i * 150}ms` }} />
+                </li>
+              ))}
+
+            {EXPERIENCE.map(({ id, period, role, company, summary, stack = [], current }, i) => (
+              <motion.li key={id ?? `${company}-${i}`} variants={item} className="group relative">
                 {/* Node on the rail */}
                 <span
                   aria-hidden="true"
@@ -176,7 +180,8 @@ export default function Experience() {
                   <p className="mt-1.5 font-mono text-xs tracking-[0.2em] text-neutral-500 uppercase">
                     {company}
                   </p>
-                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-neutral-400">{summary}</p>
+                  {summary && <p className="mt-4 max-w-xl text-sm leading-relaxed text-neutral-400">{summary}</p>}
+                  {stack.length > 0 && (
                   <ul className="mt-5 flex flex-wrap gap-2" aria-label={`Technologies at ${company}`}>
                     {stack.map((tech) => (
                       <li
@@ -187,6 +192,7 @@ export default function Experience() {
                       </li>
                     ))}
                   </ul>
+                  )}
                 </div>
               </motion.li>
             ))}

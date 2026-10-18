@@ -19,7 +19,13 @@ const NAV = [
  */
 export default function Contact() {
   const reduce = useReducedMotion();
-  const { socialLinks: LINKS } = useContent();
+  const { socialLinks: LINKS, quests, experience, experienceReady } = useContent();
+  // Drop index entries whose sections are hidden because they have no content.
+  const index = NAV.filter(
+    ({ href }) =>
+      !(href === '#beyond-the-brief' && quests.length === 0) &&
+      !(href === '#experience' && experienceReady && experience.length === 0),
+  );
   const rise = reduce ? 0 : 26;
 
   const item = {
@@ -184,7 +190,7 @@ export default function Contact() {
           </p>
 
           <nav aria-label="Site index" className="hidden items-center gap-5 md:flex">
-            {NAV.map(({ index, label, href }) => (
+            {index.map(({ index, label, href }) => (
               <a
                 key={index}
                 href={href}

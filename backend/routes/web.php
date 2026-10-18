@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ExperienceController;
 use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\QuestController;
@@ -23,6 +24,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     Route::resource('projects', ProjectController::class)->except('show');
     Route::resource('quests', QuestController::class)->except('show');
+    Route::resource('experiences', ExperienceController::class)->except('show');
     Route::resource('services', ServiceController::class)->except('show');
     Route::resource('tech-domains', TechDomainController::class)->except('show');
     Route::resource('links', SocialLinkController::class)->except('show');

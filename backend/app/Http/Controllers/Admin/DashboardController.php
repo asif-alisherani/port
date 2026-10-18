@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
+use App\Models\Experience;
 use App\Models\Project;
 use App\Models\Quest;
 use App\Models\Service;
@@ -18,6 +19,7 @@ class DashboardController extends Controller
             'stats' => [
                 ['label' => 'Projects', 'value' => Project::count(), 'route' => route('admin.projects.index')],
                 ['label' => 'Side quests', 'value' => Quest::count(), 'route' => route('admin.quests.index')],
+                ['label' => 'Experience', 'value' => Experience::count(), 'route' => route('admin.experiences.index')],
                 ['label' => 'Service cards', 'value' => Service::count(), 'route' => route('admin.services.index')],
                 ['label' => 'Stack domains', 'value' => TechDomain::count(), 'route' => route('admin.tech-domains.index')],
                 ['label' => 'Links', 'value' => SocialLink::count(), 'route' => route('admin.links.index')],

@@ -24,6 +24,7 @@
         ['admin.dashboard',        'Dashboard',     'admin'],
         ['admin.projects.index',   'Projects',      'admin/projects'],
         ['admin.quests.index',     'Side quests',   'admin/quests'],
+        ['admin.experiences.index','Experience',    'admin/experiences'],
         ['admin.services.index',   'Service cards', 'admin/services'],
         ['admin.tech-domains.index','Stack',        'admin/tech-domains'],
         ['admin.links.index',      'Links',         'admin/links'],
@@ -44,7 +45,7 @@
 
         <nav class="p-3">
             @foreach ($nav as [$route, $label, $prefix])
-                @php $active = request()->is($prefix) || request()->is($prefix.'/*'); @endphp
+                @php $active = request()->is($prefix) || ($prefix !== 'admin' && request()->is($prefix.'/*')); @endphp
                 <a href="{{ route($route) }}"
                    class="mb-1 flex items-center justify-between rounded px-3 py-2.5 font-mono text-[10px] tracking-[.2em] uppercase transition
                           {{ $active ? 'bg-amber-400/10 text-amber-300' : 'text-neutral-500 hover:bg-white/5 hover:text-neutral-200' }}">

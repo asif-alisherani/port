@@ -24,9 +24,13 @@ export default function NavBar() {
   const [activeId, setActiveId] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const navRef = useRef(null);
-  const { quests } = useContent();
-  // "Brief" (side quests) only exists while there are quests to show.
-  const links = quests.length ? LINKS : LINKS.filter(({ id }) => id !== 'beyond-the-brief');
+  const { quests, experience, experienceReady } = useContent();
+  // Sections hide themselves when empty; so do their links.
+  const links = LINKS.filter(
+    ({ id }) =>
+      !(id === 'beyond-the-brief' && quests.length === 0) &&
+      !(id === 'experience' && experienceReady && experience.length === 0),
+  );
   const { scrollY, scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 26, mass: 0.4 });
 
