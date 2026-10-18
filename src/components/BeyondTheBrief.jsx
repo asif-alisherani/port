@@ -101,6 +101,8 @@ export default function BeyondTheBrief() {
         >
           {/* The quest index: hover previews, click opens the dossier page */}
           <motion.ol
+            // Remount when the list changes so late-arriving quests animate in too.
+            key={QUESTS.map((q) => q.slug).join('|') || 'empty'}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: '-60px' }}

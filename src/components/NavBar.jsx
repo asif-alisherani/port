@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValueEvent, useScroll, useSpring } from 'motion/react';
 import { openContactForm } from '../lib/contactForm.js';
+import { useContent } from '../context/ContentContext.jsx';
 
 const EASE = [0.22, 1, 0.36, 1];
 const EMAIL = 'sherani.asifali@gmail.com';
@@ -23,6 +24,9 @@ export default function NavBar() {
   const [activeId, setActiveId] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const navRef = useRef(null);
+  const { quests } = useContent();
+  // "Brief" (side quests) only exists while there are quests to show.
+  const links = quests.length ? LINKS : LINKS.filter(({ id }) => id !== 'beyond-the-brief');
   const { scrollY, scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 26, mass: 0.4 });
 
@@ -30,7 +34,7 @@ export default function NavBar() {
 
   // Scroll-spy: mark whichever section occupies the middle of the viewport.
   useEffect(() => {
-    const sections = LINKS.map(({ id }) => document.getElementById(id)).filter(Boolean);
+    const sections = links.map(({ id }) => document.getElementById(id)).filter(Boolean);
     if (!sections.length) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -42,7 +46,7 @@ export default function NavBar() {
     );
     sections.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [links.length]);
 
   // Mobile menu: close on Escape, on a tap outside, and when the layout reaches desktop.
   useEffect(() => {
@@ -100,7 +104,7 @@ export default function NavBar() {
 
         {/* Section links */}
         <ul className="hidden items-center gap-6 lg:flex xl:gap-8">
-          {LINKS.map(({ label, href, id }) => {
+          {links.map(({ label, href, id }) => {
             const active = activeId === id;
             return (
               <li key={href}>
@@ -205,11 +209,11 @@ export default function NavBar() {
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400 shadow-[0_0_8px_rgba(252,211,77,0.8)]" />
                   Navigate
                 </span>
-                <span>{String(LINKS.length).padStart(2, '0')} sections</span>
+                <span>{String(links.length).padStart(2, '0')} sections</span>
               </div>
 
               <ul className="py-1">
-                {LINKS.map(({ label, href, id }, i) => {
+                {links.map(({ label, href, id }, i) => {
                   const active = activeId === id;
                   return (
                     <motion.li

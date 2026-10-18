@@ -26,7 +26,10 @@ function Sprockets({ side }) {
  */
 export default function Projects() {
   const reduce = useReducedMotion();
-  const { projects: PROJECTS } = useContent();
+  const { projects: PROJECTS, status } = useContent();
+  // Remount the reel whenever the list changes, so its entrance animation runs
+  // for the new cells (otherwise cells added after the first reveal stay invisible).
+  const reelKey = PROJECTS.map((p) => `${p.slug}:${p.cover}`).join('|') || status;
   const railRef = useRef(null);
   const drag = useRef({ down: false, x: 0, left: 0, moved: 0 });
   const queued = useRef(false);
@@ -54,7 +57,7 @@ export default function Projects() {
       setProgress(max > 0 ? el.scrollLeft / max : 0);
     });
   };
-  useEffect(syncProgress, []);
+  useEffect(syncProgress, [reelKey]);
 
   const nudge = (dir) => {
     const el = railRef.current;
@@ -148,8 +151,40 @@ export default function Projects() {
         </div>
       </div>
 
+      {/* Placeholder reel while the projects load (no demo content on the live site) */}
+      {PROJECTS.length === 0 && status === 'loading' && (
+        <ul
+          aria-label="Loading projects"
+          aria-busy="true"
+          className="no-scrollbar mt-14 flex gap-6 overflow-hidden px-6 pt-4 pb-8 md:px-10 lg:px-[max(2.5rem,calc((100vw-80rem)/2+2.5rem))] [mask-image:linear-gradient(to_right,transparent,black_3%,black_97%,transparent)]"
+        >
+          {OFFSETS.map((offset, i) => (
+            <li key={i} style={{ marginTop: offset }} className="w-56 shrink-0 sm:w-64">
+              <div className="relative overflow-hidden border border-white/10 bg-neutral-950">
+                <Sprockets side="top-0" />
+                <div className="aspect-[5/8] w-full animate-pulse bg-gradient-to-b from-neutral-900 via-neutral-950 to-neutral-900" style={{ animationDelay: `${i * 120}ms` }} />
+                <Sprockets side="bottom-0" />
+              </div>
+              <div className="mt-4 h-3 w-2/3 animate-pulse bg-neutral-900" style={{ animationDelay: `${i * 120}ms` }} />
+              <div className="mt-2 h-2 w-1/2 animate-pulse bg-neutral-900/70" style={{ animationDelay: `${i * 120}ms` }} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Nothing published, or the API never answered */}
+      {PROJECTS.length === 0 && status !== 'loading' && (
+        <div className="relative mx-auto mt-14 w-full max-w-7xl px-6 md:px-10">
+          <p className="border border-dashed border-white/10 px-6 py-16 text-center font-mono text-[10px] tracking-[0.3em] text-neutral-500 uppercase">
+            {status === 'error' ? 'Reel offline. Refresh in a moment.' : 'New reels in the edit bay. Check back soon.'}
+          </p>
+        </div>
+      )}
+
       {/* The reel. Full-bleed so cells can run edge to edge. */}
+      {PROJECTS.length > 0 && (
       <motion.ul
+        key={reelKey}
         ref={railRef}
         onScroll={syncProgress}
         variants={stagger}
@@ -221,6 +256,7 @@ export default function Projects() {
           </motion.li>
         ))}
       </motion.ul>
+      )}
 
       {/* Head-unit readout: progress line + live percentage */}
       <div className="relative mx-auto mt-4 w-full max-w-7xl px-6 md:px-10">
